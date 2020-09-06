@@ -13,3 +13,4 @@
  */
 
 #include "typedefs.h"
+#include "server.h"

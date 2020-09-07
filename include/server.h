@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -9,7 +10,7 @@
 // this is the function the user must implement
 Response on_request(Request request);
 
-void start_server(int port) {
+void run_server(int port) {
 
   int serverfd; // server socket file descriptor
   int clientfd; // client socket file descriptor
@@ -23,7 +24,7 @@ void start_server(int port) {
   // create socket
   serverfd = socket(AF_INET, SOCK_STREAM, 0); // 0 is the protocol value for Internet Protocol (IP)
   if(serverfd < 0)
-    error("ERROR opening socket");
+    error("Error opening socket");
   
   printf("Socket created.\n");
 
@@ -39,7 +40,7 @@ void start_server(int port) {
   serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
   serveraddr.sin_port = htons((unsigned short) port);
   if(bind(serverfd, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) < 0)
-    error("ERROR on binding");
+    error("Error on binding");
 
   printf("Port binded to socket.\n");
 
@@ -59,7 +60,7 @@ void start_server(int port) {
     // wait for a connection request
     clientfd = accept(serverfd, (struct sockaddr *) &clientaddr, &clientlen);
     if(clientfd < 0) 
-      error("ERROR on accept");
+      error("Error on accept");
 
     // structure that the programmer will get with request data
     Request request;
@@ -69,11 +70,34 @@ void start_server(int port) {
     
     // open client socket stream
     if((stream = fdopen(clientfd, "r+")) == NULL)
-      error("ERROR on fdopen");
+      error("Error on socket open");
 
     request = extract_request_data(stream);
 
+    // user uses POST, PUT, or any other method
+    if(strcasecmp("GET", request.method)) {
+      client_error(stream, 405, "Method not allowed");
+      continue;
+    }
+
     // programmer does what he wants with the request data and sends a response
     response = on_request(request);
+
+    fflush(stream);
+
+    // response is sent
+    fprintf(stream, "HTTP/1.1 200 OK\n");
+    fprintf(stream, "Server: WebC by carlostojal\n");
+    fprintf(stream, "Content-Type: %s\n", response.content_type);
+    fprintf(stream, "\r\n");
+    fflush(stream);
+    fprintf(stream, "%s", response.body);
+
+    printf("Sent response.\n");
+
+    // clean up
+    fclose(stream);
+    close(clientfd);
+
   }
 }

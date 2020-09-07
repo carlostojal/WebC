@@ -1,3 +1,16 @@
+
+/*
+ * WebC
+ *
+ * include/utils.h
+ *
+ * Various functions to parse / create data, for example.
+ *
+ * 
+ * Carlos Tojal (carlostojal)
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 

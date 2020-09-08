@@ -12,9 +12,6 @@
  */
 
 #include <stdio.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <winsock2.h>
 
 #pragma comment(lib, "ws2_32.lib") // Winsock library

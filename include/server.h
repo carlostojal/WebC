@@ -12,9 +12,16 @@
  */
 
 #include <stdio.h>
+
+#if defined(_WIN32) || defined(WIN32) // windows systems
+#define IS_WINDOWS 1
+#include <winsock2.h>
+#else // unix systems
+#define IS_WINDOWS 0
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#endif
 
 #include "utils.h"
 
@@ -32,7 +39,17 @@ void run_server(int port) {
 
   FILE *stream; // client socket file stream
 
+  
+
   printf("Server starting...\n\n");
+
+  /*
+  if(IS_WINDOWS) {
+    printf("Initializing Winsock...\n");
+    if(WSAStartup(MAKEWORD(2,2), &wsa) != 0) {
+      error("Error initializing Winsock.");
+    }
+  }*/
 
   // create socket
   serverfd = socket(AF_INET, SOCK_STREAM, 0); // 0 is the protocol value for Internet Protocol (IP)
@@ -80,6 +97,24 @@ void run_server(int port) {
 
     // structure that the programmer will send
     Response response;
+
+    int readed, bytes_loaded = 0;
+    char *buffer = (char *) malloc(BUFFER_SIZE);
+
+    /*
+    printf("will read\n");
+    while((readed = read(serverfd, buffer, BUFFER_SIZE)) > 0) {
+      printf("buffer: %s |\n", buffer);
+      printf("readed: %d\n", readed);
+    }*/
+
+    recv(clientfd, buffer, BUFFER_SIZE, 0);
+
+    char headers[2048] = "HTTP/1.1 200 OK\nServer: test\nContent-Type: text/plain\n\r\nHello";
+
+    send(clientfd, headers, strlen(headers), 0);
+
+    /*
     
     // open client socket stream
     if((stream = fdopen(clientfd, "r+")) == NULL)
@@ -109,8 +144,12 @@ void run_server(int port) {
     printf("Sent response.\n");
 
     // clean up
-    fclose(stream);
+    fclose(stream);*/
+    
+    #if defined(__WIN32) || defined(WIN32)
+    closesocket(clientfd);
+    #else
     close(clientfd);
-
+    #endif
   }
 }

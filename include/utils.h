@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 8192
 #define MAX_SUBSTR_SIZE 250
 
 #ifndef LOG_REQUEST_DATA

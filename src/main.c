@@ -5,9 +5,9 @@
  * src/main.c
  *
  * This is an example implementation
- * of the library. 
+ * of the library.
  *
- * 
+ *
  * Carlos Tojal (carlostojal)
  *
  */
@@ -30,6 +30,7 @@ int main() {
 
 // this function is called when the server gets a request
 // you should returns a "Response" type variable.
+/*
 Response on_request(Request request) {
 
   Response response;
@@ -47,4 +48,4 @@ Response on_request(Request request) {
   }
 
   return response;
-}
+}*/

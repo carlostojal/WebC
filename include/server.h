@@ -6,19 +6,19 @@
  *
  * Sockets creation and connection handle.
  *
- * 
+ *
  * Carlos Tojal (carlostojal)
  *
  */
 
 #include <stdio.h>
+#include <unistd.h>
 
 #if defined(_WIN32) || defined(WIN32) // windows systems
 #define IS_WINDOWS 1
 #include <winsock2.h>
 #else // unix systems
 #define IS_WINDOWS 0
-#include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #endif
@@ -39,23 +39,23 @@ void run_server(int port) {
 
   FILE *stream; // client socket file stream
 
-  
+  #if defined(__WIN32) || defined(WIN32)
+  WSADATA wsa;
+  #endif // defined
 
   printf("Server starting...\n\n");
 
-  /*
-  if(IS_WINDOWS) {
-    printf("Initializing Winsock...\n");
-    if(WSAStartup(MAKEWORD(2,2), &wsa) != 0) {
-      error("Error initializing Winsock.");
-    }
-  }*/
+  #if defined(_WIN32) || defined(WIN32)
+  printf("Initializing Winsock...\n");
+  if(WSAStartup(MAKEWORD(2,2), &wsa) != 0)
+    error("Error initializing Winsock.");
+  #endif
 
   // create socket
   serverfd = socket(AF_INET, SOCK_STREAM, 0); // 0 is the protocol value for Internet Protocol (IP)
   if(serverfd < 0)
     error("Error opening socket");
-  
+
   printf("Socket created.\n");
 
 
@@ -65,7 +65,7 @@ void run_server(int port) {
 
 
   // bind port to socket
-  bzero((char *) &serveraddr, sizeof(serveraddr));
+  // bzero((char *) &serveraddr, sizeof(serveraddr));
   serveraddr.sin_family = AF_INET;
   serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
   serveraddr.sin_port = htons((unsigned short) port);
@@ -81,15 +81,15 @@ void run_server(int port) {
 
   printf("\nServer running on port %d.\n", port);
 
-  
+
   int clientlen = sizeof(clientaddr);
 
   // loop where requests are handled and responses sent
   while(1) {
-    
+
     // wait for a connection request
     clientfd = accept(serverfd, (struct sockaddr *) &clientaddr, &clientlen);
-    if(clientfd < 0) 
+    if(clientfd < 0)
       error("Error on accept");
 
     // structure that the programmer will get with request data
@@ -110,12 +110,8 @@ void run_server(int port) {
 
     recv(clientfd, buffer, BUFFER_SIZE, 0);
 
-    char headers[2048] = "HTTP/1.1 200 OK\nServer: test\nContent-Type: text/plain\n\r\nHello";
-
-    send(clientfd, headers, strlen(headers), 0);
-
     /*
-    
+
     // open client socket stream
     if((stream = fdopen(clientfd, "r+")) == NULL)
       error("Error on socket open");
@@ -145,7 +141,11 @@ void run_server(int port) {
 
     // clean up
     fclose(stream);*/
-    
+
+    char headers[2048] = "HTTP/1.1 200 OK\nServer: test\nContent-Type: text/plain\n\r\nHello";
+
+    send(clientfd, headers, strlen(headers), 0);
+
     #if defined(__WIN32) || defined(WIN32)
     closesocket(clientfd);
     #else

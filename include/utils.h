@@ -47,8 +47,6 @@ void print_request_data(Request request) {
   printf("Method: %s\n", request.method);
   printf("Route: %s\n", request.route);
   printf("HTTP Version: %s\n", request.http_version);
-  printf("\nHeaders:\n");
-  print_headers_data(request.headers);
   printf("\n");
 }
 
@@ -79,22 +77,20 @@ Arg *extract_get_args(char *route) {
   return args;
 }
 
-int extract_headers(FILE *stream, Header *headers) {
+int extract_headers(char *request, Header *headers) {
 
   char *buffer = (char *) malloc(BUFFER_SIZE);
   char *buffer_copy = (char *) malloc(BUFFER_SIZE);
 
-  printf("Extracting request headers.\n");
+  printf("Extracting request headers...\n");
 
   int i = 0;
 
-  fgets(buffer, BUFFER_SIZE, stream);
   strcpy(buffer_copy, buffer);
   strcpy(headers[i].name, strtok(buffer_copy, ": "));
   strcpy(headers[i].value, substr(buffer, strlen(buffer_copy), MAX_SUBSTR_SIZE));
   i++;
   while(strcmp(buffer, "\r\n") && i < MAX_HEADERS) {
-    fgets(buffer, BUFFER_SIZE, stream);
     strcpy(buffer_copy, buffer);
     strcpy(headers[i].name, strtok(buffer_copy, ": "));
     strcpy(headers[i].value, substr(buffer, strlen(buffer_copy), MAX_SUBSTR_SIZE));
@@ -109,25 +105,15 @@ int extract_headers(FILE *stream, Header *headers) {
   return i-1;
 }
 
-Request extract_request_data(FILE *stream) {
+Request extract_request_data(char *raw_request) {
 
   char *buffer = malloc(BUFFER_SIZE); // string buffer
 
+  memcpy(buffer, raw_request, BUFFER_SIZE);
+
   Request request;
 
-  // get HTTP request line
-  fgets(buffer, BUFFER_SIZE, stream);
-  printf("%s", buffer); 
   sscanf(buffer, "%s %s %s", request.method, request.route, request.http_version);
-
-  int i = 0;
-
-  request.headers = malloc(MAX_HEADERS * sizeof(Header));
-
-  // read the HTTP headers
-  request.n_headers = extract_headers(stream, request.headers);
-
-  // request.args = extract_get_args(request.route); // TODO
 
   if(LOG_REQUEST_DATA)
     print_request_data(request);

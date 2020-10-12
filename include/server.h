@@ -15,10 +15,8 @@
 #include <unistd.h>
 
 #if defined(_WIN32) || defined(WIN32) // windows systems
-#define IS_WINDOWS 1
 #include <winsock2.h>
 #else // unix systems
-#define IS_WINDOWS 0
 #include <sys/socket.h>
 #include <netinet/in.h>
 #endif
@@ -39,13 +37,10 @@ void run_server(int port) {
 
   FILE *stream; // client socket file stream
 
-  #if defined(__WIN32) || defined(WIN32)
-  WSADATA wsa;
-  #endif // defined
-
   printf("Server starting...\n\n");
 
   #if defined(_WIN32) || defined(WIN32)
+  WSADATA wsa;
   printf("Initializing Winsock...\n");
   if(WSAStartup(MAKEWORD(2,2), &wsa) != 0)
     error("Error initializing Winsock.");
@@ -101,55 +96,27 @@ void run_server(int port) {
     int readed, bytes_loaded = 0;
     char *buffer = (char *) malloc(BUFFER_SIZE);
 
-    /*
-    printf("will read\n");
-    while((readed = read(serverfd, buffer, BUFFER_SIZE)) > 0) {
-      printf("buffer: %s |\n", buffer);
-      printf("readed: %d\n", readed);
-    }*/
-
     recv(clientfd, buffer, BUFFER_SIZE, 0);
 
-    /*
+    // printf("%s", buffer);
 
-    // open client socket stream
-    if((stream = fdopen(clientfd, "r+")) == NULL)
-      error("Error on socket open");
+    request = extract_request_data(buffer);
 
-    request = extract_request_data(stream);
+    char raw_response[16348];
 
-    // user uses POST, PUT, or any other method
-    if(strcasecmp("GET", request.method)) {
-      client_error(stream, 405, "Method not allowed");
-      continue;
-    }
-
-    // programmer does what he wants with the request data and sends a response
     response = on_request(request);
+    
+    sprintf(raw_response, "HTTP/1.1 %d %s\nServer: WebC\nContent-Type: %s\n\r\n%s", response.status, response.status_description, response.content_type, response.body);
 
-    fflush(stream);
-
-    // response is sent
-    fprintf(stream, "HTTP/1.1 200 OK\n");
-    fprintf(stream, "Server: WebC by carlostojal\n");
-    fprintf(stream, "Content-Type: %s\n", response.content_type);
-    fprintf(stream, "\r\n");
-    fflush(stream);
-    fprintf(stream, "%s", response.body);
-
-    printf("Sent response.\n");
+    send(clientfd, raw_response, strlen(raw_response), 0);
 
     // clean up
-    fclose(stream);*/
-
-    char headers[2048] = "HTTP/1.1 200 OK\nServer: test\nContent-Type: text/plain\n\r\nHello";
-
-    send(clientfd, headers, strlen(headers), 0);
-
     #if defined(__WIN32) || defined(WIN32)
     closesocket(clientfd);
     #else
     close(clientfd);
     #endif
+
+    free(buffer);
   }
 }

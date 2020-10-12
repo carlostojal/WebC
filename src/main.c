@@ -6,6 +6,9 @@
  *
  * This is an example implementation
  * of the library.
+ * In this case, where "/" is requested
+ * the current system time is write to logs,
+ * and that logs appear to the client as a list.
  *
  *
  * Carlos Tojal (carlostojal)
@@ -13,10 +16,11 @@
  */
 
 #include <stdio.h>
+#include <time.h>
 #include <string.h>
 
 #define PORT 8081
-#define LOG_REQUEST_DATA 1 // 1 - logs each request and respective headers; 0 - doesn't log
+#define LOG_REQUEST_DATA 0 // 1 - logs each request and respective headers; 0 - doesn't log
 
 #include "../include/webc.h"
 
@@ -30,22 +34,53 @@ int main() {
 
 // this function is called when the server gets a request
 // you should returns a "Response" type variable.
-/*
 Response on_request(Request request) {
 
-  Response response;
+  Response response; 
 
-  // set content type so the browser can interpret correctly
-  strcpy(response.content_type, "text/html");
+  printf("%s\n", request.route);
 
-  // search for the User-Agent header in the request
-  int i;
-  for(i = 0; i < request.n_headers; i++) {
-    if(strcmp(request.headers[i].name, "User-Agent") == 0) {
-      // set the body with the requested route and the user agent
-      sprintf(response.body, "<html><body><h1>You requested \"%s\"</h1><h2>You are using %s</h2></body>", request.route, request.headers[i].value);
-    }
+  // client requested "/"
+  if(strcmp(request.route, "/") == 0) {
+
+    // get time
+    time_t rawtime;
+    struct tm * timeinfo;
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    
+    // write time to logs
+    FILE *fp = fopen("./htdocs/logs.txt", "a");
+    fprintf(fp, "%s", asctime(timeinfo));
+    fclose(fp);
+
+    const int buffer_len = 1024;
+    char buffer[buffer_len];
+
+    strcpy(response.body, "<html><body><h1>Access logs:</h1><ul>");
+
+    // read time from logs and create response body
+    fp = fopen("./htdocs/logs.txt", "r");
+    while(fgets(buffer, buffer_len, fp))
+      sprintf(response.body, "%s<li>%s</li>", response.body, buffer);
+    fclose(fp);
+    strcat(response.body, "</ul></body></html>");
+
+    // set response headers
+    strcpy(response.content_type, "text/html");
+    response.status = 200;
+    strcpy(response.status_description, "OK");
+    
+    return response;
+
+  } else {
+
+    strcpy(response.content_type, "text/html");
+    response.status = 404;
+    strcpy(response.status_description, "Not Found");
+
+    strcpy(response.body, "<h1>404 Not Found");
+
+    return response;
   }
-
-  return response;
-}*/
+}
